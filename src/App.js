@@ -14,9 +14,36 @@ export default function App() {
   const [tz, setTz] = useState(0);
   const [Objts, setObjTs] = useState("");
   const [ts, setTs] = useState([]);
-
+  
+  function fecthData() {
+    fetch("http://api.open-notify.org/astros.json")
+    .then(respo => {
+      if (!respo.ok) {
+        throw Error("ERROR");
+      }
+        return respo.json();
+    })
+    .then(data => {
+      console.log(data)
+      const html = data.people.map(astro => {
+        return `
+        <div class="astro">
+        <h1>People On Space</h1>
+        <p>Craft: ${astro.craft}</p><br>
+        <p>Name: ${astro.name}</p><br><br>
+        </div>`;
+  })
+  .join("");
+  document.querySelector("#data").insertAdjacentHTML("afterbegin", html);
+})
+.catch(error => {
+  console.log(error);
+});
+}
   useEffect(() => {
-    if (map.current) return; // initialize map only once
+    
+    if (map.current) return; // initialize map only once 
+fecthData();
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v10",
@@ -24,6 +51,7 @@ export default function App() {
       zoom: 1,
       // projection: "naturalEarth", // starting projection
     });
+    
     // disable map rotation using right click + drag
     map.current.dragRotate.disable();
   });
@@ -127,7 +155,6 @@ export default function App() {
     let TSI = 0;
     TS = TS/1000;
     TSI = TS;
-    console.log(TSI.toString())
     // setObjTs(TS.toString()) 
     for (let i = 0; i < 6; i++){
       // setTs([...ts, Objts])
@@ -153,40 +180,41 @@ export default function App() {
   .then(data => {
     console.log(data)
     const html = data.map(sat => {
-      fetch(
-        "https://api.wheretheiss.at/v1/coordinates/"+sat.latitude+","+sat.longitude,)
-        .then(res => res.json())
-        .then(data2 => {
-          let splitTz = data2.timezone_id.split("/");
-        if (/GMT/.test(splitTz[1])) {
-          splitTz = "Above The Ocean"
-        } 
-        else {
-          splitTz = splitTz[1];
-        }
-        return splitTz});
-        
+        const api_url = "https://api.wheretheiss.at/v1/coordinates/"+sat.latitude+","+sat.longitude
+        async function getTz() {
+          const response = await fetch(api_url);
+          const { timezone_id } = await response.json();
+            let splitTz = timezone_id.split("/");
+            if (/GMT/.test(splitTz[1])) {
+              splitTz = "Above The Ocean";
+            } 
+            else {
+              splitTz = splitTz[1];
+            }
+            console.log(splitTz);
+            return splitTz;
+        };
+        console.log(getTz());
       let DateTime = new Date(sat.timestamp*1000);
       // DateTime = DateTime.toLocaleDateString();
       alert("Date: "+DateTime.toLocaleDateString()+"\n"+
       "Time: "+DateTime.toLocaleTimeString()+"\n"+
       "Latitude: "+sat.latitude+"\n"+
       "Longtitude: "+sat.longitude+"\n"+
-      "City: "+splitTz
+      "City: "+getTz()
       );
-      console.log(DateTime);
-      return `
-      <div class="sat">
-        <p>Date: <span id="tsdate"/>
-        Latitude: ${sat.latitude}
-        Longtitude: ${sat.longitude}</p>
-      </div>
-        <script document.getElementById("tsdate").innerHTML = DateTime; />
-      `; 
+      // return `
+      // <div class="sat">
+      //   <p>Date: <span id="tsdate"/>
+      //   Latitude: ${sat.latitude}
+      //   Longtitude: ${sat.longitude}</p><br>
+      // </div>
+      //   <script document.getElementById("tsdate").innerHTML = DateTime; />
+      // `; 
     })
-    .join("");
+    // .join("");
     console.log(html)
-    document.querySelector("#data").insertAdjacentHTML("afterbegin", html)
+    // document.querySelector("#data").insertAdjacentHTML("afterbegin", html)
   })
   .catch(error => {
     console.log(error);
@@ -194,6 +222,7 @@ export default function App() {
     
     return DT;
   };
+
   return (
     <div>
       <div className="Container">
